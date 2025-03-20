@@ -8,17 +8,6 @@
 -- Query: monthly_revenue_by_year.sql
 -- Calcula los ingresos por mes y año.
 
-WITH revenue_data AS (
-    SELECT 
-        STRFTIME('%m', order_purchase_timestamp) AS month_no,
-        STRFTIME('%Y', order_purchase_timestamp) AS year,
-        SUM(payment_value) AS total_revenue
-    FROM olist_orders o
-    JOIN olist_order_payments p ON o.order_id = p.order_id
-    WHERE order_status = 'delivered'
-    GROUP BY month_no, year
-)
-
 SELECT 
     month_no AS month_no,
     CASE month_no
@@ -38,6 +27,15 @@ SELECT
     COALESCE(SUM(CASE WHEN year = '2016' THEN total_revenue END), 0.00) AS Year2016,
     COALESCE(SUM(CASE WHEN year = '2017' THEN total_revenue END), 0.00) AS Year2017,
     COALESCE(SUM(CASE WHEN year = '2018' THEN total_revenue END), 0.00) AS Year2018
-FROM revenue_data
+FROM (
+    SELECT 
+        STRFTIME('%m', order_purchase_timestamp) AS month_no,
+        STRFTIME('%Y', order_purchase_timestamp) AS year,
+        SUM(payment_value) AS total_revenue
+    FROM olist_orders o
+    JOIN olist_order_payments p ON o.order_id = p.order_id
+    WHERE order_status = 'delivered'
+    GROUP BY month_no, year
+) AS revenue_data
 GROUP BY month_no
 ORDER BY month_no;

@@ -18,17 +18,6 @@
 -- Query: delivery_time_difference_by_month.sql
 -- Calcula las diferencias entre los tiempos reales y estimados de entrega por mes y año.
 
-WITH delivery_data AS (
-    SELECT 
-        STRFTIME('%m', order_delivered_customer_date) AS month_no,
-        STRFTIME('%Y', order_delivered_customer_date) AS year,
-        JULIANDAY(order_delivered_customer_date) - JULIANDAY(order_purchase_timestamp) AS real_time,
-        JULIANDAY(order_estimated_delivery_date) - JULIANDAY(order_purchase_timestamp) AS estimated_time
-    FROM olist_orders
-    WHERE order_status = 'delivered' 
-        AND order_delivered_customer_date IS NOT NULL
-)
-
 SELECT 
     month_no AS month_no,
     CASE month_no
@@ -51,6 +40,15 @@ SELECT
     AVG(CASE WHEN year = '2016' THEN estimated_time END) AS Year2016_estimated_time,
     AVG(CASE WHEN year = '2017' THEN estimated_time END) AS Year2017_estimated_time,
     AVG(CASE WHEN year = '2018' THEN estimated_time END) AS Year2018_estimated_time
-FROM delivery_data
+FROM (
+    SELECT 
+        STRFTIME('%m', order_delivered_customer_date) AS month_no,
+        STRFTIME('%Y', order_delivered_customer_date) AS year,
+        JULIANDAY(order_delivered_customer_date) - JULIANDAY(order_purchase_timestamp) AS real_time,
+        JULIANDAY(order_estimated_delivery_date) - JULIANDAY(order_purchase_timestamp) AS estimated_time
+    FROM olist_orders
+    WHERE order_status = 'delivered' 
+        AND order_delivered_customer_date IS NOT NULL
+) AS delivery_data
 GROUP BY month_no
 ORDER BY month_no;
