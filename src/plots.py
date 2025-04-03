@@ -63,21 +63,21 @@ def plot_global_amount_order_status(df: DataFrame):
     """
     _, ax = plt.subplots(figsize=(6, 3), subplot_kw=dict(aspect="equal"))
 
-    elements = [x.split()[-1] for x in df["order_status"]]
+    elements = [x.split()[-1] for x in df["estado_pedido"]]
 
-    wedges, autotexts = ax.pie(df["Ammount"], textprops=dict(color="w"))
+    wedges, autotexts = ax.pie(df["Cantidad"], textprops=dict(color="w"))
 
     ax.legend(
         wedges,
         elements,
-        title="Order Status",
+        title="Estado del Pedido",
         loc="center left",
         bbox_to_anchor=(1, 0, 0.5, 1),
     )
 
     plt.setp(autotexts, size=8, weight="bold")
 
-    ax.set_title("Order Status Total")
+    ax.set_title("Cantidad Global por Estado del Pedido")
 
     my_circle = plt.Circle((0, 0), 0.7, color="white")
     p = plt.gcf()
@@ -182,7 +182,14 @@ def plot_freight_value_weight_relationship(df: DataFrame):
     # TODO: Representar gráficamente la relación entre el valor del flete y el peso usando un scatterplot de seaborn.
     # El eje x debe ser el peso (weight) y el eje y debe ser el valor del flete (freight value).
 
-    raise NotImplementedError
+    plt.figure(figsize=(10, 6))
+    sns.scatterplot(data=df, x="product_weight_g", y="freight_value", alpha=0.6)
+    plt.title("Relationship Between Freight Value and Weight")
+    plt.xlabel("Product Weight (g)")
+    plt.ylabel("Freight Value")
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
 
 
 def plot_delivery_date_difference(df: DataFrame):
@@ -191,9 +198,10 @@ def plot_delivery_date_difference(df: DataFrame):
     Args:
         df (DataFrame): Dataframe with delivery date difference query result
     """
-    sns.barplot(data=df, x="Delivery_Difference", y="State").set(
-        title="Difference Between Delivery Estimate Date and Delivery Date"
+    sns.barplot(data=df, x="Diferencia_Entrega", y="Estado").set(
+        title="Diferencia entre Fecha Estimada y Fecha de Entrega"
     )
+    plt.show()
 
 
 def plot_order_amount_per_day_with_holidays(df: DataFrame):
@@ -206,4 +214,18 @@ def plot_order_amount_per_day_with_holidays(df: DataFrame):
     # Marcar los días festivos con líneas verticales.
     # Sugerencia: usar plt.axvline.
 
-    raise NotImplementedError
+    plt.figure(figsize=(14, 6))
+    plt.plot(df["date"], df["order_count"], marker="o", linestyle="-", label="Order Count")
+
+    # Marcar días festivos con líneas verticales rojas
+    holidays = df[df["holiday"]]
+    for holiday in holidays["date"]:
+        plt.axvline(holiday, color="red", linestyle="--", alpha=0.5)
+
+    plt.title("Order Amount per Day with Holidays Highlighted")
+    plt.xlabel("Date")
+    plt.ylabel("Order Amount")
+    plt.xticks(rotation=45)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()

@@ -51,7 +51,7 @@ def query_delivery_date_difference(database: Engine) -> QueryResult:
         Query: The query for delivery date difference.
     """
     query_name = QueryEnum.DELIVERY_DATE_DIFFERECE.value
-    query = read_query(QueryEnum.DELIVERY_DATE_DIFFERECE.value)
+    query = read_query(query_name)
     return QueryResult(query=query_name, result=read_sql(query, database))
 
 
@@ -65,7 +65,7 @@ def query_global_ammount_order_status(database: Engine) -> QueryResult:
         Query: The query for global percentage of order status.
     """
     query_name = QueryEnum.GLOBAL_AMMOUNT_ORDER_STATUS.value
-    query = read_query(QueryEnum.GLOBAL_AMMOUNT_ORDER_STATUS.value)
+    query = read_query(query_name)
     return QueryResult(query=query_name, result=read_sql(query, database))
 
 
@@ -79,7 +79,7 @@ def query_revenue_by_month_year(database: Engine) -> QueryResult:
         Query: The query for revenue by month year.
     """
     query_name = QueryEnum.REVENUE_BY_MONTH_YEAR.value
-    query = read_query(QueryEnum.REVENUE_BY_MONTH_YEAR.value)
+    query = read_query(query_name)
     return QueryResult(query=query_name, result=read_sql(query, database))
 
 
@@ -93,7 +93,7 @@ def query_revenue_per_state(database: Engine) -> QueryResult:
         Query: The query for revenue per state.
     """
     query_name = QueryEnum.REVENUE_PER_STATE.value
-    query = read_query(QueryEnum.REVENUE_PER_STATE.value)
+    query = read_query(query_name)
     return QueryResult(query=query_name, result=read_sql(query, database))
 
 
@@ -107,7 +107,7 @@ def query_top_10_least_revenue_categories(database: Engine) -> QueryResult:
         Query: The query for top 10 least revenue categories.
     """
     query_name = QueryEnum.TOP_10_LEAST_REVENUE_CATEGORIES.value
-    query = read_query(QueryEnum.TOP_10_LEAST_REVENUE_CATEGORIES.value)
+    query = read_query(query_name)
     return QueryResult(query=query_name, result=read_sql(query, database))
 
 
@@ -121,7 +121,7 @@ def query_top_10_revenue_categories(database: Engine) -> QueryResult:
         Query: The query for top 10 revenue categories.
     """
     query_name = QueryEnum.TOP_10_REVENUE_CATEGORIES.value
-    query = read_query(QueryEnum.TOP_10_REVENUE_CATEGORIES.value)
+    query = read_query(query_name)
     return QueryResult(query=query_name, result=read_sql(query, database))
 
 
@@ -135,7 +135,7 @@ def query_real_vs_estimated_delivered_time(database: Engine) -> QueryResult:
         Query: The query for real vs estimated delivered time.
     """
     query_name = QueryEnum.REAL_VS_ESTIMATED_DELIVERED_TIME.value
-    query = read_query(QueryEnum.REAL_VS_ESTIMATED_DELIVERED_TIME.value)
+    query = read_query(query_name)
     return QueryResult(query=query_name, result=read_sql(query, database))
 
 
@@ -170,28 +170,19 @@ def query_freight_value_weight_relationship(database: Engine) -> QueryResult:
     products = read_sql("SELECT * FROM olist_products", database)
 
     # TODO: Fusionar las tablas items, orders y products usando 'order_id'/'product_id'.
-    # Sugerimos usar la función pandas.merge().
-    # Asigna el resultado a la variable `data`.
-    data = ...
+    data = pd.merge(items, orders, on="order_id")
+    data = pd.merge(data, products, on="product_id")
 
     # TODO: Obtener solo los pedidos entregados.
-    # Usando los resultados anteriores de la fusión (almacenados en la variable `data`),
-    # aplica una máscara booleana para conservar solo los pedidos con estado 'delivered'.
-    # Asigna el resultado a la variable `delivered`.
-    delivered = ...
+    delivered = data[data["order_status"] == "delivered"]
 
     # TODO: Obtener la suma de freight_value y product_weight_g por cada order_id.
-    # Un mismo pedido (identificado por 'order_id') puede contener varios productos,
-    # por lo que decidimos sumar los valores de 'freight_value' y 'product_weight_g'
-    # de todos los productos dentro de ese pedido.
-    # Usa el DataFrame de pandas almacenado en la variable `delivered`. Sugerimos
-    # que consultes pandas.DataFrame.groupby() y pandas.DataFrame.agg() para la
-    # transformación de los datos.
-    # Guarda el resultado en la variable `aggregations`.
-    aggregations = ...
+    aggregations = (
+        delivered.groupby("order_id")[["freight_value", "product_weight_g"]]
+        .sum()
+        .reset_index()
+    )
 
-    # Mantén el código a continuación tal como está, esto devolverá el resultado de
-    # la variable `aggregations` con el nombre y formato correspondiente.
     return QueryResult(query=query_name, result=aggregations)
 
 
@@ -220,35 +211,25 @@ def query_orders_per_day_and_holidays_2017(database: Engine) -> QueryResult:
     orders = read_sql("SELECT * FROM olist_orders", database)
 
     # TODO: Convertir la columna order_purchase_timestamp a tipo datetime.
-    # Reemplaza el contenido de la columna `order_purchase_timestamp` en el DataFrame `orders`
-    # con los mismos datos pero convertidos a tipo datetime.
-    # Te sugerimos leer sobre cómo usar pd.to_datetime() para esto.
-    orders["order_purchase_timestamp"] = ...
+    orders["order_purchase_timestamp"] = pd.to_datetime(orders["order_purchase_timestamp"])
 
     # TODO: Filtrar solo las fechas de compra de pedidos del año 2017.
-    # Usando el DataFrame `orders`, aplica una máscara booleana para obtener todas las
-    # columnas, pero solo las filas correspondientes al año 2017.
-    # Asigna el resultado a una nueva variable llamada `filtered_dates`.
-    filtered_dates = ...
+    filtered_dates = orders[orders["order_purchase_timestamp"].dt.year == 2017]
 
     # TODO: Contar la cantidad de pedidos por día.
-    # Usando el DataFrame `filtered_dates`, cuenta cuántos pedidos se hicieron
-    # cada día.
-    # Asigna el resultado a la variable `order_purchase_ammount_per_date`.
-    order_purchase_ammount_per_date = ...
+    order_purchase_ammount_per_date = (
+        filtered_dates["order_purchase_timestamp"].dt.date.value_counts().sort_index()
+    )
 
-    # TODO: Crear un DataFrame con el resultado. Asígnalo a la variable `result_df`.
-    # Ahora crearemos el DataFrame final para la salida.
-    # Este DataFrame debe tener 3 columnas:
-    #   - 'order_count': con la cantidad de pedidos por día. Debes obtener
-    #                    estos datos de la variable `order_purchase_ammount_per_date`.
-    #   - 'date': la fecha correspondiente a cada cantidad de pedidos.
-    #   - 'holiday': columna booleana con True si esa fecha es festivo,
-    #                y False en caso contrario. Usa el DataFrame `holidays` para esto.
-    result_df = ...
+    # TODO: Crear un DataFrame con el resultado.
+    result_df = pd.DataFrame({
+        "date": order_purchase_ammount_per_date.index,
+        "order_count": order_purchase_ammount_per_date.values
+    })
 
-    # Mantén el código a continuación tal como está, esto devolverá el resultado de
-    # la variable `aggregations` con el nombre y formato correspondiente.
+    holidays["date"] = pd.to_datetime(holidays["date"]).dt.date
+    result_df["holiday"] = result_df["date"].isin(holidays["date"])
+
     return QueryResult(query=query_name, result=result_df)
 
 
