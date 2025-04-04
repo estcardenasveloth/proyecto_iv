@@ -1,0 +1,85 @@
+services:
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres-db-volume:/var/lib/postgresql/data
+
+  airflow-init:
+    image: apache/airflow:2.8.1-python3.11
+    depends_on:
+      - postgres
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__WEBSERVER__EXPOSE_CONFIG: 'True'
+      _AIRFLOW_WWW_USER_USERNAME: airflow
+      _AIRFLOW_WWW_USER_PASSWORD: airflow
+      _AIRFLOW_WWW_USER_EMAIL: airflow@example.com
+      _AIRFLOW_WWW_USER_FIRSTNAME: Air
+      _AIRFLOW_WWW_USER_LASTNAME: Flow
+      PYTHONPATH: /opt/airflow
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - ../src:/opt/airflow/src  # acceso al código de tu proyecto
+      - ../olist.db:/opt/airflow/olist.db
+      - ../queries:/opt/airflow/queries
+      - ../dataset:/opt/airflow/dataset
+    command: >
+      bash -c "airflow db init && airflow users create 
+      --username $$AIRFLOW__WWW_USER_USERNAME 
+      --firstname $$AIRFLOW__WWW_USER_FIRSTNAME 
+      --lastname $$AIRFLOW__WWW_USER_LASTNAME 
+      --role Admin 
+      --email $$AIRFLOW__WWW_USER_EMAIL 
+      --password $$AIRFLOW__WWW_USER_PASSWORD"
+
+  webserver:
+    image: apache/airflow:2.8.1-python3.11
+    restart: always
+    depends_on:
+      - postgres
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__WEBSERVER__EXPOSE_CONFIG: 'True'
+      PYTHONPATH: /opt/airflow
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - ../src:/opt/airflow/src
+      - ../olist.db:/opt/airflow/olist.db
+      - ../queries:/opt/airflow/queries
+      - ../dataset:/opt/airflow/dataset
+    ports:
+      - "8080:8080"
+    command: webserver
+
+  scheduler:
+    image: apache/airflow:2.8.1-python3.11
+    restart: always
+    depends_on:
+      - webserver
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      PYTHONPATH: /opt/airflow
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - ../src:/opt/airflow/src
+      - ../olist.db:/opt/airflow/olist.db
+      - ../queries:/opt/airflow/queries
+      - ../dataset:/opt/airflow/dataset
+    command: scheduler
+
+volumes:
+  postgres-db-volume:
+
